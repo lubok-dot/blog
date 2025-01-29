@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Oliver Pfante">
+<meta name="dcterms.date" content="2025-01-26">
+<meta name="description" content="This blog delves into the implementation of an agentic framework leveraging LangGraph’s Long-term memory feature. It demonstrates how this capability enhances the BoT agent’s ability to reason and solve complex problems by retaining and utilizing contextual information over time. Practical examples showcase the potential of LangGraph for building advanced, memory-augmented LLM agents.">
+
+<title>Buffer of Thoughts (BoT) – homepage</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">homepage</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Buffer of Thoughts (BoT)</h1>
+                  <div>
+        <div class="description">
+          This blog delves into the implementation of an agentic framework leveraging LangGraph’s Long-term memory feature. It demonstrates how this capability enhances the BoT agent’s ability to reason and solve complex problems by retaining and utilizing contextual information over time. Practical examples showcase the potential of LangGraph for building advanced, memory-augmented LLM agents.
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">agentic</div>
+                <div class="quarto-category">code</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Oliver Pfante </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">January 26, 2025</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#key-features-of-bot" id="toc-key-features-of-bot" class="nav-link active" data-scroll-target="#key-features-of-bot"><strong>Key Features of BoT</strong></a></li>
+  <li><a href="#notebook-objective" id="toc-notebook-objective" class="nav-link" data-scroll-target="#notebook-objective">Notebook Objective</a></li>
+  <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a></li>
+  <li><a href="#prompts" id="toc-prompts" class="nav-link" data-scroll-target="#prompts">Prompts</a></li>
+  <li><a href="#templates" id="toc-templates" class="nav-link" data-scroll-target="#templates">Templates</a></li>
+  <li><a href="#runnables" id="toc-runnables" class="nav-link" data-scroll-target="#runnables">Runnables</a></li>
+  <li><a href="#long-term-memory" id="toc-long-term-memory" class="nav-link" data-scroll-target="#long-term-memory">Long-term memory</a></li>
+  <li><a href="#states" id="toc-states" class="nav-link" data-scroll-target="#states">States</a></li>
+  <li><a href="#nodes" id="toc-nodes" class="nav-link" data-scroll-target="#nodes">Nodes</a></li>
+  <li><a href="#conditional-edges" id="toc-conditional-edges" class="nav-link" data-scroll-target="#conditional-edges">Conditional Edges</a></li>
+  <li><a href="#build-the-graph" id="toc-build-the-graph" class="nav-link" data-scroll-target="#build-the-graph">Build the Graph</a></li>
+  <li><a href="#run-the-agent" id="toc-run-the-agent" class="nav-link" data-scroll-target="#run-the-agent">Run the Agent</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<p>The “Buffer of Thoughts” (BoT)<span class="citation" data-cites="yang2024bufferthoughtsthoughtaugmentedreasoning">(<a href="#ref-yang2024bufferthoughtsthoughtaugmentedreasoning" role="doc-biblioref">Yang et al. 2024</a>)</span> is a framework designed to enhance the <strong>accuracy</strong>, <strong>efficiency</strong>, and <strong>robustness</strong> of Large Language Models (LLMs) in reasoning tasks.</p>
+<section id="key-features-of-bot" class="level2">
+<h2 class="anchored" data-anchor-id="key-features-of-bot"><strong>Key Features of BoT</strong></h2>
+<ol type="1">
+<li><strong>Long-term memory</strong> BoT introduces a <strong>Meta-Buffer</strong>, which serves as a kind of Long-term memory, persisting across different sessions. This repository stores high-level <strong>thought-templates</strong> distilled from prior problem-solving processes. These templates are retrieved and adapted for diverse tasks, eliminating the need to design reasoning structures anew.</li>
+<li><strong>Three Components</strong>
+<ul>
+<li><strong>Problem-Distiller</strong>: Responsible for extracting key information and constraints from tasks.</li>
+<li><strong>Meta-Buffer</strong>: A lightweight memory storing thought-templates, which can span across various categories and domains. While six categories are mentioned in the paper (e.g., text comprehension, mathematical reasoning), the framework is not inherently restricted to this classification or number.</li>
+<li><strong>Buffer-Manager</strong>: Dynamically updates the meta-buffer by distilling new templates as tasks are solved, ensuring the memory evolves with experience.</li>
+</ul></li>
+<li><strong>Advantages</strong>
+<ul>
+<li><strong>Improved Accuracy</strong>: By adapting templates to different tasks, BoT achieves precise and reliable reasoning.</li>
+<li><strong>Efficiency</strong>: Stored templates allow LLMs to bypass complex multi-query reasoning, streamlining the process.</li>
+<li><strong>Robustness</strong>: The generalized reasoning framework ensures consistent performance across a variety of tasks.</li>
+</ul></li>
+</ol>
+</section>
+<section id="notebook-objective" class="level2">
+<h2 class="anchored" data-anchor-id="notebook-objective">Notebook Objective</h2>
+<ul>
+<li>Demonstrates the implementation of BoT using <strong>LangGraph</strong>, highlighting Long-term memory capabilities via a <code>BaseStore</code> object for persistent storage and retrieval of thought-templates.<br>
+</li>
+<li>Showcases LangGraph’s support for dynamic and adaptive memory, enhancing LLMs’ reasoning capabilities within the BoT framework.</li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="bot_agent.png" class="img-fluid figure-img"></p>
+<figcaption>Illustration of the BoT Method. Figure taken from <span class="citation" data-cites="yang2024bufferthoughtsthoughtaugmentedreasoning">(<a href="#ref-yang2024bufferthoughtsthoughtaugmentedreasoning" role="doc-biblioref">Yang et al. 2024</a>)</span></figcaption>
+</figure>
+</div>
+</section>
+<section id="setup" class="level2">
+<h2 class="anchored" data-anchor-id="setup">Setup</h2>
+<div id="cell-4" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pydantic <span class="im">import</span> BaseModel, Field</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Literal, Optional</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> textwrap</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> uuid</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pprint <span class="im">import</span> pprint</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> re</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> langgraph.graph <span class="im">import</span> StateGraph, END, START, MessagesState</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> langgraph.checkpoint.memory <span class="im">import</span> MemorySaver</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> langgraph.store.base <span class="im">import</span> BaseStore</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> langchain_core.runnables <span class="im">import</span> RunnableConfig</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> langchain_core.messages <span class="im">import</span> AIMessage</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> langchain_openai <span class="im">import</span> ChatOpenAI</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> langgraph.store.memory <span class="im">import</span> InMemoryStore</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> langchain_core.prompts <span class="im">import</span> PromptTemplate</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trustcall <span class="im">import</span> create_extractor</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> langchain.embeddings <span class="im">import</span> init_embeddings</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="prompts" class="level2">
+<h2 class="anchored" data-anchor-id="prompts">Prompts</h2>
+<p>We start by writing down the relevant prompts for each of the three components. They are copy-pasted from the original publication.</p>
+<div id="cell-6" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>problem_distiller_prompt <span class="op">=</span> textwrap.dedent(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"""</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="st">    ## Problem-Distiller</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="st">    You are a highly professional and intelligent expert in information distillation. Your role is to extract essential information from user input queries to solve problems effectively. You also transform this extracted information into a suitable format based on the type of issue.</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="st">    ---</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="st">    ### Task Instructions</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="st">    1. **Key Information**:</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="st">    - Extract values and key variables from the user input.</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="st">    - Ensure all essential information required to solve the problem is provided.</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="st">    - Hand over this distilled information to the respective expert for task resolution.</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="st">    2. **Restrictions**:</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="st">    - Identify the objective of the problem.</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="st">    - Outline any corresponding constraints that must be adhered to.</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="st">    3. **Distilled Task**:</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="st">    - Extend the problem based on the extracted key information and constraints.</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="st">    - Summarize a meta problem that addresses the user query and accommodates more input and output variations.</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="st">    - Incorporate the real-world scenario of the extended problem.</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="st">    - Define types of key variables and information constraints from the original problem to restrict variables in the extended problem.</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="st">    - Use the input key information from the user query as an example to solve the problem.</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>).strip()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The Instantiate Reasoning step is part of the Meta-Buffer and adapts thought-templates to solve specific tasks. It either instantiates a retrieved template with task-specific reasoning structures or assigns a general template for new tasks, ensuring efficient and accurate problem-solving.</p>
+<div id="cell-8" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>instantiate_reasoning_prompt <span class="op">=</span> textwrap.dedent(</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"""</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="st">    ## Meta Reasoner</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="st">    You are a Meta Reasoner who is extremely knowledgeable in various fields, including Computer Science, Math, Physics, Literature, History, Chemistry, Logical Reasoning, Culture, and Language. You are also skilled in applying high-level reasoning structures for different tasks. </span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="st">    ### Reasoning Structures:</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="st">    1. **Prompt-based Structure**:</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="st">    - **Best For**: Common Sense Reasoning, Application Scheduling.</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="st">    </span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="st">    2. **Procedure-based Structure**:</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="st">    - **Best For**: Creative tasks like Creative Language Generation, and Text Comprehension.</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="st">    </span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="st">    3. **Programming-based Structure**:</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="st">    - **Best For**: Mathematical Reasoning, Code Programming.</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="st">    - Can transform real-world problems into programming problems to solve efficiently.</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="st">    ---</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="st">    ### Reasoning Instantiation</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="st">    **Your Task:**</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="st">    1. **Contextual Analysis**: Deliberately consider the context and the problem distilled from the Problem-Distiller. Use your understanding to identify a suitable domain expert for solving the problem.</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="st">    2. **Structure Selection**: Based on the distilled information, select one of the reasoning structures suitable for addressing the problem.</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="st">    3. **Template Application**: If a thought-template is provided, directly follow it to instantiate the solution for the given problem.</span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>).strip()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The following prompts outline the behavior of the Buffer-Manager and the process for creating a new template when no suitable template is found during the Meta-Buffer’s template retrieval step. This process, known as <em>Template Distillation</em>, involves two key steps: first, summarizing the task using the distilled task description and the derived solution; second, leveraging this summary to perform a contextual search for in-task and cross-task examples, which are then used as few-shot examples to generate the new template.</p>
+<div id="cell-10" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># prompt to infer the core task summary. That one is needed for contextual search for relevant in-task and cross-task templates as few-shot examples for generating the</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>core_task_summarization_prompt <span class="op">=</span> textwrap.dedent(</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"""</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="st">    ## Prompt for Template Distillation:</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="st">    **User Input**:</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="st">    **Problem Description**: </span><span class="sc">{distilled_task}</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="st">    **Solution Steps or Code**: </span><span class="sc">{solution_steps}</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="st">    1. **Core task summarization**:</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="st">        Identify and describe the basic type and core challenges of the problem, such as classifying it as a mathematical problem (e.g., solving a quadratic equation), a data structure problem (e.g., array sorting), an algorithm problem (e.g., search algorithms), etc. And analyze the most efficient way to solve the problem.</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>).strip()</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>template_distiller_prompt <span class="op">=</span> textwrap.dedent(</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">"""</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="st">    ## Prompt for Template Distillation (continued)</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="st">    2. **Solution Steps Description**:</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="st">    Outline the general solution steps, including how to define the problem, determine variables, list key equations or constraints, choose appropriate solving strategies and methods, and how to verify the correctness of the results.</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="st">    3. **General Answer Template**:</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="st">    Based on the above analysis, propose a template or approach that can be widely applied to this type of problem, including possible variables, functions, class definitions, etc. If it is a programming problem, provide a set of base classes and interfaces that can be used to construct solutions to specific problems.</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="st">    Please ensure that your response is highly concise and structured, so that specific solutions can be transformed into generalizable methods.</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="st">    [Optional] Here are some exemplars of the thought-template:</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;in-task-examples&gt;</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a><span class="st">    </span><span class="sc">{in_task_examples}</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;in-task-examples&gt;</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;cross-task-examples&gt;</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="st">    </span><span class="sc">{cross_task_examples}</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;cross-task-examples&gt;</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>).strip()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Some prompts, provided to the <a href="https://github.com/hinthornw/trustcall">Trustcall Executors</a> defined in the next section, are used to extract structured output from the plain text responses of the LLM.</p>
+<div id="cell-12" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>structure_prompt <span class="op">=</span> textwrap.dedent(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"""</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="st">    Extract the items of the 'ThoughtTemplate' Pydantic class from the previous conversation.</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="st">                                    </span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;convo&gt;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="st">    </span><span class="sc">{conversation}</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;/convo&gt; </span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>).strip()</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>distilled_task_extractor_prompt <span class="op">=</span> textwrap.dedent(</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">"""</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="st">    Extract the content of the 'Extended Problem' subsection within the 'Distilled Task' section from the entire distilled problem description.</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;distilled-problem&gt;</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="st">    </span><span class="sc">{distilled_problem}</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;distilled-problem&gt;</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>).strip()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="templates" class="level2">
+<h2 class="anchored" data-anchor-id="templates">Templates</h2>
+<p>A Pydantic class is used to digest and extract Thought Templates in the required format. It consists of three sections: a “Task Description” which provides a brief overview of the task; a “Solution Description” which outlines a high-level approach to solving the task; and finally, the “Thought-Template” itself, which offers a step-by-step guide for solving the problem.</p>
+<div id="cell-14" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ThoughtTemplate(BaseModel):</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Defining the three fields of the Thought-Template"""</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    task_description: <span class="bu">str</span> <span class="op">=</span> Field(description<span class="op">=</span><span class="st">"Task Description"</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    solution_description: <span class="bu">str</span> <span class="op">=</span> Field(description<span class="op">=</span><span class="st">"Solution Description"</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    thought_template: <span class="bu">str</span> <span class="op">=</span> Field(description<span class="op">=</span><span class="st">"Thought-Template"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="runnables" class="level2">
+<h2 class="anchored" data-anchor-id="runnables">Runnables</h2>
+<p>The <a href="https://python.langchain.com/docs/concepts/runnables/">Lang-Chain Runnables</a> encapsulating the main logic of the subsequently defined nodes of the graph.</p>
+<div id="cell-16" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Setup Large Language Model (LLM)</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>LLM <span class="op">=</span> ChatOpenAI(</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    model_name<span class="op">=</span><span class="st">"gpt-4o-mini"</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    openai_api_key<span class="op">=</span>os.getenv(<span class="st">"OPENAI_API_KEY"</span>),</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    temperature<span class="op">=</span><span class="fl">0.0</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-17" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define Trustcall instance for sane extraction of the Thought-Template items: Task Description, Solution Description, Thought-Template</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>structure_template_text <span class="op">=</span> create_extractor(</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    LLM, tools<span class="op">=</span>[ThoughtTemplate], tool_choice<span class="op">=</span><span class="st">"ThoughtTemplate"</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract the distilled task from the distilled problem. Required for the semantic search in the Template retrieval step.</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>distilled_task_extractor <span class="op">=</span> (</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    PromptTemplate.from_template(</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>        template<span class="op">=</span>distilled_task_extractor_prompt) <span class="op">|</span> LLM</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="long-term-memory" class="level2">
+<h2 class="anchored" data-anchor-id="long-term-memory">Long-term memory</h2>
+<p>All Thought-Templates are stored in a Long-term memory to ensure their availability across sessions. The Long-term memory supports semantic search on the Task Description of each Thought-Template, which plays a crucial role in two steps: first, during template retrieval in the Meta-Buffer, where a relevant template is identified for the problem; and second, during Template Distillation by the Buffer-Manager, where it is used to retrieve relevant in-task and cross-task few-shot examples for generating a new template.</p>
+<div id="cell-20" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create store with semantic search enabled</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>template_store <span class="op">=</span> InMemoryStore(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    index<span class="op">=</span>{</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">"embed"</span>: init_embeddings(model<span class="op">=</span><span class="st">"openai:text-embedding-3-small"</span>),</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"dims"</span>: <span class="dv">1536</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>        <span class="co"># semantic search is only conducted on the task_description field of a Thought Template</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"fields"</span>: [<span class="st">"task_description"</span>],</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>/var/folders/9y/v7607j0j5vn1tnw1_fjpl4s40000gn/T/ipykernel_71541/2854118368.py:4: LangChainBetaWarning: The function `init_embeddings` is in beta. It is actively being worked on, so the API may change.
+  "embed": init_embeddings(model="openai:text-embedding-3-small"),</code></pre>
+</div>
+</div>
+<p>Optionally, one can populate the Thought-Template storage with predefined templates like the six ones listed in the appendix of <span class="citation" data-cites="yang2024bufferthoughtsthoughtaugmentedreasoning">(<a href="#ref-yang2024bufferthoughtsthoughtaugmentedreasoning" role="doc-biblioref">Yang et al. 2024</a>)</span> or one can also start with a blank template store.</p>
+<div id="cell-22" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>user_id <span class="op">=</span> <span class="st">"user_123"</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>long_term_memory <span class="op">=</span> <span class="st">"thought_templates"</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>namespace_for_memory <span class="op">=</span> (user_id, long_term_memory)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="states" class="level2">
+<h2 class="anchored" data-anchor-id="states">States</h2>
+<p>The state of the LangGraph agent is defined by inheriting from <code>MessageState</code>, the default state of LangGraph that stores the message history. Additionally, two more attributes are added, whose values are manipulated during the BoT agent’s actions.</p>
+<div id="cell-24" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> BoTState(MessagesState):</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Thought-Template possibly extracted from the Long-term memory</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    template_text: Optional[<span class="bu">str</span>]</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># part of the distilled problem description. Required for similarity computations</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    distilled_task: <span class="bu">str</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="nodes" class="level2">
+<h2 class="anchored" data-anchor-id="nodes">Nodes</h2>
+<p>Nodes of the LangGraph agent which update the state. Each Node maps onto each step of the BoT agent.</p>
+<div id="cell-26" class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> problem_distiller(state: BoTState) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Distills task information from the forwarded problem description using a Language Model (LLM).</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co">    This function represents the problem distillation step in the Buffer of Thoughts (BoT) framework.</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co">    It processes the most recent message, which is the original problem description, in the agent's</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">    state to extract a distilled representation of the task and updates the state with the distilled task.</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="co">    state : BoTState</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="co">        The current state of the agent, which contains the message history and other relevant attributes.</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="co">    dict</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="co">        A dictionary with the following keys:</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="co">        - "distilled_task" : str</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="co">            The distilled task description extracted from the latest message which is the problem description.</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a><span class="co">        - "messages" : str</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="co">            The distilled problem description which contains the distilled task description but also a key information and problem constraints.</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Invoke the LLM with the Problem-Distiller prompt and the latest message</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>    distilled_task <span class="op">=</span> LLM.invoke(</span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>        [problem_distiller_prompt, state[<span class="st">"messages"</span>][<span class="op">-</span><span class="dv">1</span>]])</span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Extract the distilled task description from the LLM response</span></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>        <span class="st">"distilled_task"</span>: distilled_task_extractor.invoke(</span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>            distilled_task.content</span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>        ).content,</span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>        <span class="st">"messages"</span>: distilled_task,  <span class="co"># Update state with the distilled task message</span></span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>    }</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-27" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> template_retrieval(</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    state: BoTState, config: RunnableConfig, store: BaseStore</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Retrieves the most relevant Thought-Template for a given task using semantic search.</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co">    This function conducts a semantic search between the distilled task and the task descriptions</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="co">    of Thought-Templates stored in the Long-term memory. It selects the template with the highest</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="co">    similarity score if it exceeds a user-defined threshold. If no suitable template is found, the</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="co">    template field is left blank.</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="co">    state : BoTState</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="co">        The current state of the agent, containing the distilled task and other relevant information.</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="co">    config : RunnableConfig</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="co">        Configuration object containing user-defined parameters, including the retrieval threshold.</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="co">    store : BaseStore</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="co">        The Long-term memory store where Thought-Templates are stored and queried.</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a><span class="co">    dict</span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a><span class="co">        A dictionary with the following key:</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a><span class="co">        - "template_text" : str or None</span></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a><span class="co">            The text of the retrieved Thought-Template if it satisfies the similarity threshold,</span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a><span class="co">            otherwise None.</span></span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Perform semantic search between the distilled task and templates in Long-term memory</span></span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>    items <span class="op">=</span> store.search(namespace_for_memory,</span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>                         query<span class="op">=</span>state[<span class="st">"distilled_task"</span>], limit<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>    template <span class="op">=</span> items.pop() <span class="cf">if</span> items <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Check if the retrieved template exceeds the similarity threshold</span></span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> template <span class="kw">and</span> template.score <span class="op">&gt;</span> config[<span class="st">"configurable"</span>][<span class="st">"retrieval_threshold"</span>]:</span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a>        template_text <span class="op">=</span> {</span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a>            key: val <span class="cf">for</span> key, val <span class="kw">in</span> template.value.items() <span class="cf">if</span> key <span class="op">!=</span> <span class="st">"task_description"</span></span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> {<span class="st">"template_text"</span>: template_text}</span>
+<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> {<span class="st">"template_text"</span>: <span class="va">None</span>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-28" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> instantiate_reasoning(state: BoTState) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Executes the main solution step for the BoT agent by attempting to solve the problem.</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co">    This function represents the core reasoning process in the Buffer of Thoughts (BoT) framework.</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co">    It uses either a retrieved Thought-Template to guide the solution or, if no template is available,</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co">    applies a general solution approach as defined in the prompt.</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="co">    state : BoTState</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="co">        The current state of the agent, containing the task description, Thought-Template (if retrieved),</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="co">        and other relevant information.</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a><span class="co">    dict</span></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a><span class="co">        A dictionary with the following key:</span></span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a><span class="co">        - "messages" : str</span></span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a><span class="co">            The result of the reasoning step, either guided by the Thought-Template or generated</span></span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a><span class="co">            using a general approach.</span></span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> state[<span class="st">"template_text"</span>]:</span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Reasoning step guided by the retrieved Thought-Template</span></span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> {</span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>            <span class="st">"messages"</span>: LLM.invoke(</span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>                [</span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>                    state[<span class="st">"messages"</span>][<span class="op">-</span><span class="dv">1</span>],</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>                    (</span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"user"</span>,</span>
+<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a>                        instantiate_reasoning_prompt</span>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a>                        <span class="op">+</span> <span class="ss">f"</span><span class="ch">\n\n</span><span class="ss">&lt;thought-template&gt;</span><span class="ch">\n</span><span class="sc">{</span>state[<span class="st">'template_text'</span>]<span class="sc">}</span><span class="ch">\n</span><span class="ss">&lt;thought-template&gt;"</span>,</span>
+<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a>                    ),</span>
+<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a>                ]</span>
+<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb15-37"><a href="#cb15-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb15-38"><a href="#cb15-38" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Reasoning step using a general solution approach</span></span>
+<span id="cb15-39"><a href="#cb15-39" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> {</span>
+<span id="cb15-40"><a href="#cb15-40" aria-hidden="true" tabindex="-1"></a>            <span class="st">"messages"</span>: LLM.invoke(</span>
+<span id="cb15-41"><a href="#cb15-41" aria-hidden="true" tabindex="-1"></a>                [state[<span class="st">"messages"</span>][<span class="op">-</span><span class="dv">1</span>], (<span class="st">"user"</span>, instantiate_reasoning_prompt)]</span>
+<span id="cb15-42"><a href="#cb15-42" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb15-43"><a href="#cb15-43" aria-hidden="true" tabindex="-1"></a>        }</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-29" class="cell" data-execution_count="15">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> template_distillation(</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    state: BoTState, config: RunnableConfig, store: BaseStore</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Distills a new Thought-Template when no suitable template is found in the Long-term memory.</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="co">    This function is used when the Buffer of Thoughts (BoT) agent fails to retrieve a proper thought</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="co">    template. It distills a new template by analyzing the task description and the derived solution.</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="co">    Relevant in-task and cross-task examples (i.e., similar and diverse Thought-Templates) are retrieved</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="co">    from the Long-term memory to guide the derivation of a new template.</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="co">    state : BoTState</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="co">        The current state of the agent, containing the distilled task, derived solution, and other relevant details.</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="co">    config : RunnableConfig</span></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a><span class="co">        Configuration object containing user-defined parameters, including thresholds and limits for in-task</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a><span class="co">        and cross-task template retrieval.</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="co">    store : BaseStore</span></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a><span class="co">        The Long-term memory store where Thought-Templates are stored and queried.</span></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a><span class="co">    dict</span></span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a><span class="co">        A dictionary containing:</span></span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a><span class="co">        - "messages" : str</span></span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a><span class="co">            The distilled Thought-Template generated by the BoT agent, guided by the retrieved in-task</span></span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a><span class="co">            and cross-task examples.</span></span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Summarize the core task and solution steps</span></span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a>    core_task_summarization_msg <span class="op">=</span> core_task_summarization_prompt.<span class="bu">format</span>(</span>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a>        distilled_task<span class="op">=</span>state[<span class="st">"distilled_task"</span>],</span>
+<span id="cb16-33"><a href="#cb16-33" aria-hidden="true" tabindex="-1"></a>        solution_steps<span class="op">=</span>state[<span class="st">"messages"</span>][<span class="op">-</span><span class="dv">1</span>].content,</span>
+<span id="cb16-34"><a href="#cb16-34" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb16-35"><a href="#cb16-35" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Generate task summary using LLM</span></span>
+<span id="cb16-36"><a href="#cb16-36" aria-hidden="true" tabindex="-1"></a>    task_summary <span class="op">=</span> LLM.invoke(core_task_summarization_msg)</span>
+<span id="cb16-37"><a href="#cb16-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-38"><a href="#cb16-38" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Search for relevant Thought-Templates in the Long-term memory</span></span>
+<span id="cb16-39"><a href="#cb16-39" aria-hidden="true" tabindex="-1"></a>    items <span class="op">=</span> store.search(</span>
+<span id="cb16-40"><a href="#cb16-40" aria-hidden="true" tabindex="-1"></a>        namespace_for_memory,</span>
+<span id="cb16-41"><a href="#cb16-41" aria-hidden="true" tabindex="-1"></a>        query<span class="op">=</span>task_summary.content,</span>
+<span id="cb16-42"><a href="#cb16-42" aria-hidden="true" tabindex="-1"></a>        limit<span class="op">=</span>config[<span class="st">"configurable"</span>][<span class="st">"limit"</span>],</span>
+<span id="cb16-43"><a href="#cb16-43" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb16-44"><a href="#cb16-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-45"><a href="#cb16-45" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Separate templates into in-task and cross-task examples based on their similarity scores</span></span>
+<span id="cb16-46"><a href="#cb16-46" aria-hidden="true" tabindex="-1"></a>    in_task_l <span class="op">=</span> [</span>
+<span id="cb16-47"><a href="#cb16-47" aria-hidden="true" tabindex="-1"></a>        template</span>
+<span id="cb16-48"><a href="#cb16-48" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> template <span class="kw">in</span> items</span>
+<span id="cb16-49"><a href="#cb16-49" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> template.score <span class="op">&gt;</span> config[<span class="st">"configurable"</span>][<span class="st">"in_task_threshold"</span>]</span>
+<span id="cb16-50"><a href="#cb16-50" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb16-51"><a href="#cb16-51" aria-hidden="true" tabindex="-1"></a>    in_task <span class="op">=</span> in_task_l.pop(<span class="dv">0</span>) <span class="cf">if</span> in_task_l <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb16-52"><a href="#cb16-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-53"><a href="#cb16-53" aria-hidden="true" tabindex="-1"></a>    cross_task_l <span class="op">=</span> [</span>
+<span id="cb16-54"><a href="#cb16-54" aria-hidden="true" tabindex="-1"></a>        template</span>
+<span id="cb16-55"><a href="#cb16-55" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> template <span class="kw">in</span> items</span>
+<span id="cb16-56"><a href="#cb16-56" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> template.score <span class="op">&lt;=</span> config[<span class="st">"configurable"</span>][<span class="st">"in_task_threshold"</span>]</span>
+<span id="cb16-57"><a href="#cb16-57" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb16-58"><a href="#cb16-58" aria-hidden="true" tabindex="-1"></a>    cross_task <span class="op">=</span> cross_task_l.pop(<span class="dv">0</span>) <span class="cf">if</span> cross_task_l <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb16-59"><a href="#cb16-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-60"><a href="#cb16-60" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Use in-task and cross-task examples to guide the generation of a new Thought-Template</span></span>
+<span id="cb16-61"><a href="#cb16-61" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
+<span id="cb16-62"><a href="#cb16-62" aria-hidden="true" tabindex="-1"></a>        <span class="st">"messages"</span>: LLM.invoke(</span>
+<span id="cb16-63"><a href="#cb16-63" aria-hidden="true" tabindex="-1"></a>            [</span>
+<span id="cb16-64"><a href="#cb16-64" aria-hidden="true" tabindex="-1"></a>                (<span class="st">"user"</span>, core_task_summarization_msg),  <span class="co"># Task summarization</span></span>
+<span id="cb16-65"><a href="#cb16-65" aria-hidden="true" tabindex="-1"></a>                task_summary,  <span class="co"># Task summary message</span></span>
+<span id="cb16-66"><a href="#cb16-66" aria-hidden="true" tabindex="-1"></a>                (</span>
+<span id="cb16-67"><a href="#cb16-67" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"user"</span>,</span>
+<span id="cb16-68"><a href="#cb16-68" aria-hidden="true" tabindex="-1"></a>                    template_distiller_prompt.<span class="bu">format</span>(</span>
+<span id="cb16-69"><a href="#cb16-69" aria-hidden="true" tabindex="-1"></a>                        task_summary<span class="op">=</span>task_summary,</span>
+<span id="cb16-70"><a href="#cb16-70" aria-hidden="true" tabindex="-1"></a>                        in_task_examples<span class="op">=</span>in_task.value <span class="cf">if</span> in_task <span class="cf">else</span> {},</span>
+<span id="cb16-71"><a href="#cb16-71" aria-hidden="true" tabindex="-1"></a>                        cross_task_examples<span class="op">=</span>cross_task.value <span class="cf">if</span> cross_task <span class="cf">else</span> {},</span>
+<span id="cb16-72"><a href="#cb16-72" aria-hidden="true" tabindex="-1"></a>                    ),</span>
+<span id="cb16-73"><a href="#cb16-73" aria-hidden="true" tabindex="-1"></a>                ),</span>
+<span id="cb16-74"><a href="#cb16-74" aria-hidden="true" tabindex="-1"></a>            ]</span>
+<span id="cb16-75"><a href="#cb16-75" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb16-76"><a href="#cb16-76" aria-hidden="true" tabindex="-1"></a>    }</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-30" class="cell" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> dynamic_meta_buffer_update(</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    state: BoTState, config: RunnableConfig, store: BaseStore</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Structures the distilled template into predefined sections and stores it in the Long-term memory.</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="co">    This function processes the distilled template by organizing it into three sections:</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="co">    'Task Description', 'Solution Description', and 'Thought-Template', as defined by the Pydantic class.</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="co">    The structured template is then stored in the Long-term memory in JSON format.</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="co">    state : BoTState</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="co">        The current state of the agent, containing the distilled template and related data.</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="co">    config : RunnableConfig</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="co">        Configuration object with user-defined parameters and metadata for storing the structured template.</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="co">    store : BaseStore</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="co">        The Long-term memory store where the structured template is saved in JSON format.</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a><span class="co">    dict</span></span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a><span class="co">        A dictionary containing:</span></span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a><span class="co">        - "messages" : str</span></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a><span class="co">            A message confirming the successful update of the Meta-Buffer.</span></span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Structure the distilled template into defined sections using the structure prompt</span></span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> structure_template_text.invoke(</span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>        {</span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>            <span class="st">"messages"</span>: [</span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a>                structure_prompt.<span class="bu">format</span>(</span>
+<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a>                    conversation<span class="op">=</span>state[<span class="st">"messages"</span>][<span class="op">-</span><span class="dv">1</span>].content)</span>
+<span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a>            ]</span>
+<span id="cb17-34"><a href="#cb17-34" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb17-35"><a href="#cb17-35" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb17-36"><a href="#cb17-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-37"><a href="#cb17-37" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Extract the structured response and associated metadata</span></span>
+<span id="cb17-38"><a href="#cb17-38" aria-hidden="true" tabindex="-1"></a>    r, rmeta <span class="op">=</span> result[<span class="st">"responses"</span>].pop(), result[<span class="st">"response_metadata"</span>].pop()</span>
+<span id="cb17-39"><a href="#cb17-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-40"><a href="#cb17-40" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Store the structured template in the Long-term memory</span></span>
+<span id="cb17-41"><a href="#cb17-41" aria-hidden="true" tabindex="-1"></a>    store.put(</span>
+<span id="cb17-42"><a href="#cb17-42" aria-hidden="true" tabindex="-1"></a>        (user_id, long_term_memory),  <span class="co"># Memory namespace and user context</span></span>
+<span id="cb17-43"><a href="#cb17-43" aria-hidden="true" tabindex="-1"></a>        rmeta.get(<span class="st">"json_doc_id"</span>, <span class="bu">str</span>(uuid.uuid4())),  <span class="co"># Unique document ID</span></span>
+<span id="cb17-44"><a href="#cb17-44" aria-hidden="true" tabindex="-1"></a>        r.model_dump(mode<span class="op">=</span><span class="st">"json"</span>),  <span class="co"># Save structured template as JSON</span></span>
+<span id="cb17-45"><a href="#cb17-45" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb17-46"><a href="#cb17-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-47"><a href="#cb17-47" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Return confirmation of Meta-Buffer update</span></span>
+<span id="cb17-48"><a href="#cb17-48" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">"messages"</span>: <span class="st">"Meta-Buffer updated"</span>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="conditional-edges" class="level2">
+<h2 class="anchored" data-anchor-id="conditional-edges">Conditional Edges</h2>
+<p>In case a proper Thought-Template was found during the Thought-Template Retrieval step, we skip the distillation of a new template.</p>
+<div id="cell-32" class="cell" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> update_required(state: BoTState) <span class="op">-&gt;</span> Literal[<span class="st">"Buffer-Manager"</span>, <span class="st">"END"</span>]:</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> state[<span class="st">"template_text"</span>]:</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="st">"END"</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="st">"Buffer-Manager"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="build-the-graph" class="level2">
+<h2 class="anchored" data-anchor-id="build-the-graph">Build the Graph</h2>
+<p>The graph representing the BoT agent consists of two sub-graphs: the Meta-Buffer and the Buffer-Manager. The Meta-Buffer handles the Template Retrieval and Reasoning Instantiation steps, while the Buffer-Manager generates a new Thought-Template and updates the Long-term memory if the Template Retrieval step fails to find a matching template for the problem.</p>
+<div id="cell-34" class="cell" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>meta_buffer <span class="op">=</span> StateGraph(BoTState)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co"># add nodes</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>meta_buffer.add_node(<span class="st">"Template Retrieval"</span>, template_retrieval)</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>meta_buffer.add_node(<span class="st">"Instantiated Reasoning"</span>, instantiate_reasoning)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="co"># add edges</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>meta_buffer.add_edge(START, <span class="st">"Template Retrieval"</span>)</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>meta_buffer.add_edge(<span class="st">"Template Retrieval"</span>, <span class="st">"Instantiated Reasoning"</span>)</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>meta_buffer.add_edge(<span class="st">"Instantiated Reasoning"</span>, END)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="18">
+<pre><code>&lt;langgraph.graph.state.StateGraph at 0x109eb8800&gt;</code></pre>
+</div>
+</div>
+<div id="cell-35" class="cell" data-execution_count="19">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>buffer_manager <span class="op">=</span> StateGraph(BoTState)</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="co"># add nodes</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>buffer_manager.add_node(<span class="st">"Template Distillation"</span>, template_distillation)</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>buffer_manager.add_node(<span class="st">"Dynamic Update"</span>, dynamic_meta_buffer_update)</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="co"># add edges</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>buffer_manager.add_edge(START, <span class="st">"Template Distillation"</span>)</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>buffer_manager.add_edge(<span class="st">"Template Distillation"</span>, <span class="st">"Dynamic Update"</span>)</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>buffer_manager.add_edge(<span class="st">"Dynamic Update"</span>, END)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="19">
+<pre><code>&lt;langgraph.graph.state.StateGraph at 0x109eb8560&gt;</code></pre>
+</div>
+</div>
+<div id="cell-36" class="cell" data-execution_count="20">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>memory <span class="op">=</span> MemorySaver()</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>bot_graph <span class="op">=</span> StateGraph(BoTState)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="co"># add nodes</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>bot_graph.add_node(<span class="st">"Problem-Distiller"</span>, problem_distiller)</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>bot_graph.add_node(<span class="st">"Meta-Buffer"</span>, meta_buffer.<span class="bu">compile</span>(checkpointer<span class="op">=</span>memory))</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>bot_graph.add_node(</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Buffer-Manager"</span>, buffer_manager.<span class="bu">compile</span>(checkpointer<span class="op">=</span>memory))</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="co"># add edges</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>bot_graph.add_edge(START, <span class="st">"Problem-Distiller"</span>)</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>bot_graph.add_edge(<span class="st">"Problem-Distiller"</span>, <span class="st">"Meta-Buffer"</span>)</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>bot_graph.add_conditional_edges(</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Meta-Buffer"</span>, update_required, {</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Buffer-Manager"</span>: <span class="st">"Buffer-Manager"</span>, <span class="st">"END"</span>: END}</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>bot_graph.add_edge(<span class="st">"Buffer-Manager"</span>, END)</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a><span class="co"># compile graph</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>bot_agent <span class="op">=</span> bot_graph.<span class="bu">compile</span>(checkpointer<span class="op">=</span>memory, store<span class="op">=</span>template_store)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-37" class="cell" data-execution_count="22">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> IPython.display <span class="im">import</span> Image, display</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="co"># View</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>display(Image(bot_agent.get_graph(xray<span class="op">=</span><span class="dv">1</span>).draw_mermaid_png()))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="03_buffer_of_thought_files/figure-html/cell-22-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="run-the-agent" class="level2">
+<h2 class="anchored" data-anchor-id="run-the-agent">Run the Agent</h2>
+<p>We run the agent twice for two different instances of the <a href="https://github.com/princeton-nlp/tree-of-thought-llm">Game of 24</a><span class="citation" data-cites="yao2023treethoughtsdeliberateproblem">(<a href="#ref-yao2023treethoughtsdeliberateproblem" role="doc-biblioref">Yao et al. 2023</a>)</span> where one needs to create a formula from a list of integers such that the result is 24.</p>
+<div id="cell-39" class="cell" data-execution_count="23">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> agentic.download_bot_datasets <span class="im">import</span> <span class="op">*</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-40" class="cell" data-execution_count="24">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>data <span class="op">=</span> [</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">"numbers"</span>: [<span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">6</span>, <span class="dv">6</span>],</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">"solutions"</span>: [<span class="st">"(6/3+6)×3"</span>],</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"solvable"</span>: <span class="va">True</span>,</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"amt"</span>: <span class="fl">30.23</span>,</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"solved_rate"</span>: <span class="fl">0.575</span>,</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">"mean_time"</span>: <span class="fl">14.99</span>,</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">"std_time"</span>: <span class="fl">9.07</span>,</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">"numbers"</span>: [<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">11</span>],</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">"solutions"</span>: [<span class="st">"(11+1)</span><span class="ch">\u00d7</span><span class="st">(1+1)"</span>],</span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">"solvable"</span>: <span class="va">True</span>,</span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"amt"</span>: <span class="fl">5.28</span>,</span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>        <span class="st">"solved_rate"</span>: <span class="fl">0.974</span>,</span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>        <span class="st">"mean_time"</span>: <span class="fl">5.6</span>,</span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">"std_time"</span>: <span class="fl">1.67</span>,</span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-41" class="cell" data-execution_count="25">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># wrap the instances of the dataset into some prompt</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>prompts <span class="op">=</span> [</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"""</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="ss">    Manipulate four numbers with basic arithmetic operations to reach 24.</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="ss">    &lt;numbers&gt;</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="ss">    </span><span class="sc">{</span>rec[<span class="st">'numbers'</span>]<span class="sc">}</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="ss">    &lt;numbers&gt;</span></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="ss">    """</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> rec <span class="kw">in</span> data</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-42" class="cell" data-execution_count="26">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> RunnableConfig(</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>    max_concurrency<span class="op">=</span><span class="dv">5</span>,</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    configurable<span class="op">=</span>{</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>        <span class="co"># ensuring a fresh run of the agent each time it is kicked off</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"thread_id"</span>: <span class="st">"24-game-0"</span>,</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"retrieval_threshold"</span>: <span class="fl">0.6</span>,</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"in_task_threshold"</span>: <span class="fl">0.8</span>,</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">"limit"</span>: <span class="dv">100</span>,</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the agent by streaming the graph</span></span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> event <span class="kw">in</span> bot_agent.stream(</span>
+<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a>    <span class="bu">input</span><span class="op">=</span>{<span class="st">"messages"</span>: prompts[<span class="dv">0</span>]}, config<span class="op">=</span>config, stream_mode<span class="op">=</span><span class="st">"values"</span></span>
+<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> event[<span class="st">"messages"</span>]:</span>
+<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a>        event[<span class="st">"messages"</span>][<span class="op">-</span><span class="dv">1</span>].pretty_print()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>================================ Human Message =================================
+
+
+    Manipulate four numbers with basic arithmetic operations to reach 24.
+
+    &lt;numbers&gt;
+    [3, 3, 6, 6]
+    &lt;numbers&gt;
+    
+================================== Ai Message ==================================
+
+### Key Information Extracted:
+- **Objective**: Manipulate the numbers [3, 3, 6, 6] using basic arithmetic operations (addition, subtraction, multiplication, division) to reach the target number 24.
+- **Key Variables**: 
+  - Numbers: 3, 3, 6, 6
+  - Target: 24
+- **Operations Allowed**: Addition (+), Subtraction (-), Multiplication (*), Division (/)
+
+### Constraints:
+- Each number must be used exactly once.
+- Only basic arithmetic operations are allowed.
+- The solution must equal exactly 24.
+
+### Distilled Task:
+- **Extended Problem**: Given a set of four numbers, determine if it is possible to combine them using basic arithmetic operations to reach a specified target number. This can be generalized to any set of four numbers and any target number.
+- **Real-World Scenario**: This problem can be applied in various fields such as game design (e.g., number puzzles), education (teaching arithmetic), and algorithm development (solving combinatorial problems).
+
+### Types of Key Variables and Information Constraints:
+- **Key Variables**:
+  - Set of numbers (e.g., [a, b, c, d])
+  - Target number (e.g., T)
+- **Information Constraints**:
+  - The number of elements in the set must be four.
+  - Each number must be used exactly once.
+  - The operations must be limited to basic arithmetic.
+
+### Example Solution:
+Using the numbers [3, 3, 6, 6], one possible way to reach 24 is:
+1. (6 / 3) = 2
+2. (6 * 3) = 18
+3. (18 + 2) = 20
+4. (20 + 4) = 24
+
+This example illustrates how to manipulate the numbers to achieve the target.
+================================== Ai Message ==================================
+
+### 1. Contextual Analysis
+The problem at hand involves manipulating a specific set of numbers ([3, 3, 6, 6]) using basic arithmetic operations to achieve a target number (24). This type of problem is commonly found in mathematical puzzles and games, where the goal is to use a limited set of numbers and operations to reach a specific result. 
+
+Given the nature of the problem, a suitable domain expert would be a **Mathematician** or a **Game Designer** who specializes in puzzles and combinatorial problems. They would have the expertise to explore various combinations of operations and numbers to find a solution.
+
+### 2. Structure Selection
+For this problem, the **Programming-based Structure** is the most appropriate choice. This structure is well-suited for mathematical reasoning and can efficiently handle the combinatorial nature of the problem by systematically exploring different combinations of numbers and operations.
+
+### 3. Template Application
+Using the Programming-based Structure, we can outline a solution approach as follows:
+
+#### Problem Definition
+- **Input**: A list of numbers [3, 3, 6, 6] and a target number 24.
+- **Output**: A valid expression that equals 24 using each number exactly once.
+
+#### Steps to Solve
+1. **Generate Permutations**: Create all possible permutations of the numbers to explore different orders.
+2. **Generate Combinations of Operations**: For each permutation, generate all possible combinations of the four basic arithmetic operations (+, -, *, /).
+3. **Evaluate Expressions**: For each combination of numbers and operations, evaluate the expression to check if it equals 24.
+4. **Return Valid Expressions**: If a valid expression is found, return it; otherwise, indicate that no solution exists.
+
+#### Pseudocode
+```python
+import itertools
+import operator
+
+# Define the numbers and target
+numbers = [3, 3, 6, 6]
+target = 24
+
+# Define operations
+operations = [operator.add, operator.sub, operator.mul, operator.truediv]
+operation_symbols = ['+', '-', '*', '/']
+
+# Function to evaluate expressions
+def evaluate_expression(nums, ops):
+    # Start with the first number
+    result = nums[0]
+    for i in range(3):  # There are 3 operations for 4 numbers
+        result = ops[i](result, nums[i + 1])
+    return result
+
+# Generate all permutations of numbers and combinations of operations
+for num_perm in itertools.permutations(numbers):
+    for ops in itertools.product(operations, repeat=3):
+        try:
+            if evaluate_expression(num_perm, ops) == target:
+                # Construct the expression string
+                expression = f"{num_perm[0]} {operation_symbols[operations.index(ops[0])]} {num_perm[1]} {operation_symbols[operations.index(ops[1])]} {num_perm[2]} {operation_symbols[operations.index(ops[2])]} {num_perm[3]}"
+                print(f"Valid expression: {expression} = {target}")
+        except ZeroDivisionError:
+            continue  # Skip division by zero cases
+```
+
+### Conclusion
+By following this structured approach, we can systematically explore the combinations of numbers and operations to find a valid expression that equals 24. This method leverages programming techniques to efficiently solve the problem, making it suitable for a mathematician or game designer looking to create or solve similar puzzles.
+================================ Human Message =================================
+
+Meta-Buffer updated</code></pre>
+</div>
+</div>
+<p>For the Game of 24 problem, the agent retrieves the Coding Thought-Template and uses it to derive a Python program as a generic solution (caveat: the solution is printed in Polish notation).</p>
+<div id="cell-44" class="cell" data-execution_count="39">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> extract_python_blocks(text: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">str</span>]:</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Extracts the content between ```python ... ``` blocks from the given string.</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="co">    text</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a><span class="co">        The input string containing Python code blocks.</span></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a><span class="co">    code</span></span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a><span class="co">        A list of strings, each containing the content of a Python code block.</span></span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Regex to match content between ```python ... ```</span></span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>    pattern <span class="op">=</span> <span class="vs">r"```python\n(.*?)```"</span></span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Use re.DOTALL to match across newlines</span></span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>    matches <span class="op">=</span> re.findall(pattern, text, re.DOTALL)</span>
+<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> matches</span>
+<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a><span class="co"># retrieve the state of the graph which records the entire chat</span></span>
+<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a>state <span class="op">=</span> bot_agent.get_state(config)</span>
+<span id="cb30-25"><a href="#cb30-25" aria-hidden="true" tabindex="-1"></a><span class="co"># get the last AI message which contains the solution</span></span>
+<span id="cb30-26"><a href="#cb30-26" aria-hidden="true" tabindex="-1"></a>lst_ai_message <span class="op">=</span> [</span>
+<span id="cb30-27"><a href="#cb30-27" aria-hidden="true" tabindex="-1"></a>    mess <span class="cf">for</span> mess <span class="kw">in</span> state.values[<span class="st">"messages"</span>] <span class="cf">if</span> <span class="bu">isinstance</span>(mess, AIMessage)</span>
+<span id="cb30-28"><a href="#cb30-28" aria-hidden="true" tabindex="-1"></a>].pop()</span>
+<span id="cb30-29"><a href="#cb30-29" aria-hidden="true" tabindex="-1"></a><span class="co"># retrieve the code block from the solution text</span></span>
+<span id="cb30-30"><a href="#cb30-30" aria-hidden="true" tabindex="-1"></a>code <span class="op">=</span> extract_python_blocks(lst_ai_message.content).pop()</span>
+<span id="cb30-31"><a href="#cb30-31" aria-hidden="true" tabindex="-1"></a><span class="bu">exec</span>(code)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>3 * (6 + (6 / 3))</code></pre>
+</div>
+</div>
+<p>The BoT-Agent generates a new Thought-Template for the 24-Game problem and updates the Long-term memory (aka Meta-Buffer).</p>
+<div id="cell-46" class="cell" data-execution_count="40">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get a list of all keys stored in the specified namespace within the template store</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>keys <span class="op">=</span> <span class="bu">list</span>(template_store._data[namespace_for_memory])</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Retrieve the last key in the list if there are any keys; otherwise, set key to None</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>key <span class="op">=</span> keys.pop() <span class="cf">if</span> keys <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a><span class="co"># If a key was found, retrieve the corresponding value from the template store and print it in a human-readable format</span></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> key:</span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>    pprint(template_store.get(namespace_for_memory, key).value)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>{'solution_description': 'A Python class `ArithmeticSolver` that takes a list '
+                         'of four integers and a target integer, generates all '
+                         'possible arithmetic expressions using permutations '
+                         'of the numbers and combinations of operations, and '
+                         'evaluates them to find a valid expression that '
+                         'equals the target.',
+ 'task_description': 'Combine a set of four numbers using basic arithmetic '
+                     'operations to reach a target number.',
+ 'thought_template': '1. Define the Problem: Identify the goal and input '
+                     'format. 2. Determine Variables: Input and output '
+                     'variables. 3. List Key Equations or Constraints: Basic '
+                     'operations and handling exceptions. 4. Choose '
+                     'Appropriate Solving Strategies: Use permutations and '
+                     'combinations. 5. Verify the Correctness of Results: '
+                     'Check evaluated expressions and handle exceptions.'}</code></pre>
+</div>
+</div>
+<p>We run the agent a second time for another example of the 24-game.</p>
+<div id="cell-48" class="cell" data-execution_count="27">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># update the thread, i.e., start a new conversation</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>config[<span class="st">"configurable"</span>][<span class="st">"thread_id"</span>] <span class="op">=</span> <span class="st">"24-game-1"</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the agent by streaming the graph</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> event <span class="kw">in</span> bot_agent.stream(</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">input</span><span class="op">=</span>{<span class="st">"messages"</span>: prompts[<span class="dv">1</span>]}, config<span class="op">=</span>config, stream_mode<span class="op">=</span><span class="st">"values"</span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> event[<span class="st">"messages"</span>]:</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>        event[<span class="st">"messages"</span>][<span class="op">-</span><span class="dv">1</span>].pretty_print()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>================================ Human Message =================================
+
+
+    Manipulate four numbers with basic arithmetic operations to reach 24.
+
+    &lt;numbers&gt;
+    [1, 1, 1, 11]
+    &lt;numbers&gt;
+    
+================================== Ai Message ==================================
+
+### Key Information Extracted:
+- **Objective**: Manipulate the numbers [1, 1, 1, 11] using basic arithmetic operations to reach the target number 24.
+- **Key Variables**: 
+  - Numbers: 1, 1, 1, 11
+  - Target: 24
+- **Operations Allowed**: Basic arithmetic operations (addition, subtraction, multiplication, division).
+
+### Constraints:
+- Must use all four numbers.
+- Each number can be used only once.
+- Only basic arithmetic operations are allowed.
+
+### Distilled Task:
+- **Extended Problem**: Given a set of four numbers, determine if it is possible to manipulate them using basic arithmetic operations to reach a specified target number. This can be generalized to any set of four numbers and any target number.
+- **Real-World Scenario**: This problem can be applied in various fields such as game design (e.g., number puzzles), education (teaching arithmetic), and algorithm development (solving combinatorial problems).
+
+### Types of Key Variables and Information Constraints:
+- **Key Variables**:
+  - Set of numbers (e.g., [a, b, c, d])
+  - Target number (e.g., T)
+- **Information Constraints**:
+  - The set must contain exactly four numbers.
+  - Each number must be used exactly once.
+  - Only basic arithmetic operations are permitted.
+
+### Example to Solve the Problem:
+Using the numbers [1, 1, 1, 11]:
+1. Combine the three 1s: \(1 + 1 + 1 = 3\)
+2. Multiply the result by 11: \(3 \times 11 = 33\)
+3. Subtract 9 (which can be formed by \(11 - 1 - 1\)): \(33 - 9 = 24\)
+
+Thus, the solution to the problem is achievable with the given numbers and operations.
+================================== Ai Message ==================================
+
+### Contextual Analysis
+The problem at hand involves manipulating a specific set of numbers ([1, 1, 1, 11]) using basic arithmetic operations to achieve a target number (24). This type of problem falls under the domain of mathematical reasoning and combinatorial problem-solving. A suitable domain expert for this task would be a mathematician or a computer scientist with expertise in algorithm design, particularly in combinatorial algorithms.
+
+### Structure Selection
+Given the nature of the problem, which involves generating combinations and evaluating expressions, the **Programming-based Structure** is the most appropriate choice. This structure allows for the transformation of the problem into a programming context, where we can systematically explore all possible combinations and permutations of the numbers and operations.
+
+### Template Application
+Following the provided thought-template, we can instantiate the solution as follows:
+
+1. **Problem Definition**:
+   - **Input**: A list of four numbers: `[1, 1, 1, 11]` and a target number: `24`.
+   - **Output**: A valid arithmetic expression that equals the target number.
+
+2. **Determine Variables**:
+   - **Input Variables**:
+     - `numbers`: List of four integers, e.g., `[1, 1, 1, 11]`.
+     - `target`: Integer representing the target number, e.g., `24`.
+   - **Output Variable**:
+     - `expression`: String representation of the valid arithmetic expression.
+
+3. **List Key Equations or Constraints**:
+   - Each number must be used exactly once.
+   - The operations allowed are addition (`+`), subtraction (`-`), multiplication (`*`), and division (`/`).
+   - Division by zero must be avoided.
+
+4. **Choose Appropriate Solving Strategies and Methods**:
+   - **Permutations**: Generate all possible arrangements of the input numbers.
+   - **Combinations of Operations**: Generate all possible combinations of the four basic arithmetic operations.
+   - **Evaluation**: Implement a method to evaluate the expressions formed by the numbers and operations.
+
+5. **Verify Correctness of Results**:
+   - Check if the evaluated expression equals the target (24).
+   - Handle exceptions (e.g., division by zero) gracefully.
+
+### Implementation Example
+Here is a Python implementation that follows the outlined strategy:
+
+```python
+import itertools
+import operator
+
+def evaluate_expression(numbers, operations):
+    # Create a string representation of the expression
+    expression = f"({numbers[0]} {operations[0]} {numbers[1]}) {operations[1]} ({numbers[2]} {operations[2]} {numbers[3]})"
+    try:
+        # Evaluate the expression
+        return eval(expression)
+    except ZeroDivisionError:
+        return None
+
+def find_expression(numbers, target):
+    ops = ['+', '-', '*', '/']
+    for num_perm in itertools.permutations(numbers):
+        for ops_comb in itertools.product(ops, repeat=3):
+            result = evaluate_expression(num_perm, ops_comb)
+            if result == target:
+                return f"{num_perm[0]} {ops_comb[0]} {num_perm[1]} {ops_comb[1]} {num_perm[2]} {ops_comb[2]} {num_perm[3]} = {target}"
+    return "No valid expression found."
+
+# Example usage
+numbers = [1, 1, 1, 11]
+target = 24
+print(find_expression(numbers, target))
+```
+
+### Conclusion
+This implementation systematically explores all permutations of the numbers and combinations of operations to find a valid expression that equals the target number. It adheres to the constraints and handles exceptions appropriately, providing a robust solution to the problem.</code></pre>
+</div>
+</div>
+<p>This time the agent re-used the previously generated thought template and did not distill a new one for deriving the solution.</p>
+<div id="cell-50" class="cell" data-execution_count="44">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="co"># retrieve the state of the graph which records the entire chat</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>state <span class="op">=</span> bot_agent.get_state(config)</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="co"># get the last AI message which contains the solution</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>lst_ai_message <span class="op">=</span> [</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>    mess <span class="cf">for</span> mess <span class="kw">in</span> state.values[<span class="st">"messages"</span>] <span class="cf">if</span> <span class="bu">isinstance</span>(mess, AIMessage)</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>].pop()</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a><span class="co"># retrieve the code block from the solution text</span></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>code <span class="op">=</span> extract_python_blocks(lst_ai_message.content).pop()</span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a><span class="bu">exec</span>(code)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>(1 + 1) * (1 + 11)</code></pre>
+</div>
+</div>
+<div id="cell-51" class="cell" data-execution_count="65">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> nbdev.showdoc <span class="im">import</span> <span class="op">*</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-52" class="cell" data-execution_count="66">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> nbdev</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>nbdev.nbdev_export()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+
+
+
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-yang2024bufferthoughtsthoughtaugmentedreasoning" class="csl-entry" role="listitem">
+Yang, Ling, Zhaochen Yu, Tianjun Zhang, Shiyi Cao, Minkai Xu, Wentao Zhang, Joseph E. Gonzalez, and Bin Cui. 2024. <span>“Buffer of Thoughts: Thought-Augmented Reasoning with Large Language Models.”</span> <a href="https://arxiv.org/abs/2406.04271">https://arxiv.org/abs/2406.04271</a>.
+</div>
+<div id="ref-yao2023treethoughtsdeliberateproblem" class="csl-entry" role="listitem">
+Yao, Shunyu, Dian Yu, Jeffrey Zhao, Izhak Shafran, Thomas L. Griffiths, Yuan Cao, and Karthik Narasimhan. 2023. <span>“Tree of Thoughts: Deliberate Problem Solving with Large Language Models.”</span> <a href="https://arxiv.org/abs/2305.10601">https://arxiv.org/abs/2305.10601</a>.
+</div>
+</div></section></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

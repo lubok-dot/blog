@@ -1,0 +1,39 @@
+---
+title: Miscellaneous
+# image: profile.jpg
+author: Oliver Pfante
+about:
+  template: jolla
+  image-width: 500px
+  links:
+    - icon: github
+      text: Github
+      href: https://github.com/lubok-dot
+---
+<!-- 
+<div style="text-align: center;">
+
+<figure style="text-align: center;">
+    <img src="profile.jpg" style="border-radius: 50%; width: 500px;" alt="Profile Image">
+    <figcaption style="text-align: center; font-size: 0.9em; color: gray;">
+        *The True Artist Helps the World by Revealing Mystic Truths* (1967) by Bruce Nauman. Photo taken at Kunstmuseum Basel.
+    </figcaption>
+</figure>
+
+<h1 style="margin-top: 20px;">About</h1>
+
+</div>
+ -->
+<div style="text-align: left;">
+
+Hello and welcome to my blog!
+
+I’m a mathematician by training, with a journey that has taken me from theoretical research to the dynamic world of data science. Over more than a decade, I’ve gained experience across academia and the life sciences industry, working at every stage of drug development. My career has spanned using AI in pre-clinical research and drug discovery, leveraging real-world data to streamline clinical trials, and enhancing the manufacturing of established medicines. Today, I contribute to these efforts as part of a leading generic drug company in Basel, Switzerland.
+
+My passions include mathematics, generative AI, writing, and art. My background as a researcher has left me with an intrinsic motivation for diving deep into the latest scientific articles, particularly in machine learning. I enjoy exploring these concepts by re-implementing models from scratch, relying solely on the descriptions provided in the papers. This blog is my space to share these experiments, along with some of my personal creative endeavors—whether that’s poetry, short stories, or anything else that inspires me.
+
+Thank you for stopping by!
+
+Oliver
+
+</div>

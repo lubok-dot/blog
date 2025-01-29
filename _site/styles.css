@@ -1,0 +1,8 @@
+/* css styles */
+.scrollable-output {
+    max-height: 200px; /* Adjust the height as needed */
+    overflow-y: auto;  /* Enable vertical scrolling */
+    border: 1px solid #ccc; /* Optional: Add a border */
+    padding: 5px; /* Optional: Add padding */
+    background-color: #f9f9f9; /* Optional: Light background for readability */
+}
