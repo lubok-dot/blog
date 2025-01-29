@@ -9,7 +9,7 @@ website:
       - text: "About"
         href: about.qmd
       - icon: github
-        href: https://github.com/
+        href: https://github.com/lubok-dot
       # - icon: twitter
       #   href: https://twitter.com
 format:
