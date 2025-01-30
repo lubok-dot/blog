@@ -388,7 +388,7 @@ x_{n + 1}   &amp;= \left(\dfrac{2}{\Delta} - A \right)^{-1}\left(\dfrac{2}{\Delt
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
 <p>We compare the quality of Tustin’s Bilinear transform with the Euler discretization and the Initial Value Solver from SciPy. The latter is considered the ground truth solution, and we examine how well Tustin’s and Euler’s methods approximate it.</p>
-<div id="c113acf8" class="cell">
+<div id="575639cc" class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax.numpy <span class="im">as</span> np</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> jax.numpy.linalg <span class="im">import</span> inv</span>
@@ -519,7 +519,7 @@ B &amp;= \begin{bmatrix}
 \end{bmatrix} \\ \\
 C &amp;= \begin{bmatrix} 1 &amp; 0 \end{bmatrix}
 \end{align*}\]</span></p>
-<div id="5d726b07" class="cell">
+<div id="6dfe2b12" class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> moving_object(k, b, m):</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Generate the state matrices for a moving object.</span></span>
@@ -540,7 +540,7 @@ C &amp;= \begin{bmatrix} 1 &amp; 0 \end{bmatrix}
 <span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> A, B, C</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>The force <span class="math inline">\(u(t)\)</span> is the same as in <span class="citation" data-cites="AnnotatedS4">(<a href="#ref-AnnotatedS4" role="doc-biblioref">Gu, Goel, and Ré Accessed: 2024-06-06</a>)</span>.</p>
-<div id="6346fb14" class="cell">
+<div id="39d7233f" class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> force(t):</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Generate an example force signal function.</span></span>
@@ -555,7 +555,7 @@ C &amp;= \begin{bmatrix} 1 &amp; 0 \end{bmatrix}
 <span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x <span class="op">*</span> (x <span class="op">&gt;</span> <span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>This gives us the following system:</p>
-<div id="90ce3638" class="cell">
+<div id="fcae1b99" class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> celluloid <span class="im">import</span> Camera</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
